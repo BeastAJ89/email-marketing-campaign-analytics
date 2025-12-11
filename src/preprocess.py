@@ -25,7 +25,7 @@ def dates_parser(df: pd.DataFrame) -> pd.DataFrame:
     # Extracting date and time from mailing_date
     df["mailing_date"] = pd.to_datetime(
         df["mailing_date"],
-        infer_datetime_format=True,
+        dayfirst=True,
         errors="coerce"
     )
 
@@ -72,8 +72,8 @@ def clean_data(df: pd.DataFrame) -> pd.DataFrame:
     if before != after:
         logger.info(f"Dropped {before - after} rows due to invalid mailing_date format or missing first names.")
     
-    df["previous_open_rate"].fillna(df["previous_open_rate"].median(), inplace=True)
-    df["previous_click_rate"].fillna(df["previous_click_rate"].median(), inplace=True)
+    df["previous_open_rate"].fillna(df["previous_open_rate"].median())
+    df["previous_click_rate"].fillna(df["previous_click_rate"].median())
 
     return df
 
