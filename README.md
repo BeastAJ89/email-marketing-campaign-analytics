@@ -1,6 +1,6 @@
 ![Python](https://img.shields.io/badge/Python-3.9-blue)
 ![Streamlit](https://img.shields.io/badge/Streamlit-app-red)
-![Model-RandomForest-yellow)
+![Model: RandomForest](https://img.shields.io/badge/Model-RandomForest-yellow)
 ![License](https://img.shields.io/badge/License-MIT-green)
 # Email Marketing Campaign Analytics
 
