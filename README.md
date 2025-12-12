@@ -1,3 +1,7 @@
+![Python](https://img.shields.io/badge/Python-3.9-blue)
+![Streamlit](https://img.shields.io/badge/Streamlit-app-red)
+![Model-RandomForest-yellow)
+![License](https://img.shields.io/badge/License-MIT-green)
 # Email Marketing Campaign Analytics
 
 ### Building an end-to-end machine learning workflow for email engagement
@@ -21,19 +25,22 @@ email-marketing-campaign-analytics/
 │
 ├── data/
 │ ├── raw/ # original CSV (synthetic)
-│ ├── interim/ # cleaned data
-│ └── processed/ # ready-for-modeling (future)
+│ └── interim/ # cleaned data
+│ 
 │
 ├── notebooks/
 │ ├── 01_eda.ipynb # exploratory analysis
-│ └── 02_modeling.ipynb # model training + evaluation
+│ ├── 02_modeling.ipynb # model training + evaluation
+│ └── 03_shap.ipynb # model explainability with SHAP
 │
 ├── src/
 │ ├── data_ingest.py # loading and validating raw data
 │ ├── preprocess.py # cleaning + feature engineering
 │ ├── features.py # encoding + train/test split
 │ ├── modeling.py # ML models + metrics + lift
-│ └── utils.py # logger + helper functions
+│ ├── utils.py # logger + helper functions
+│ ├── config.py # configuration 
+│ └── app.py # streamlit dashboard
 │
 ├── models/
 │ ├── rf_open_model.pkl
