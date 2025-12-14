@@ -171,13 +171,19 @@ Use Jupyter or VS Code to open `01_eda.ipynb` and `02_modeling.ipynb`.
 
 ---
 
-# Future Enhancements
+## Dashboard Preview
 
-- Streamlit dashboard  
-- SHAP value explanations  
-- Modeling click & conversion flags  
-- Hyperparameter tuning  
-- Add a small API or batch-scoring script  
+### Overview
+![Overview](assets/screenshots/Overview.png)
+
+### Segmentation Explorer
+![Segmentation](assets/screenshots/Segmentation.png)
+
+### Probability Predictor
+![Predictor](assets/screenshots/Predictor.png)
+
+### SHAP
+![Predictor](assets/screenshots/SHAP.png)
 
 ---
 
