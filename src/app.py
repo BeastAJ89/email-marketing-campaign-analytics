@@ -9,7 +9,7 @@ PROJECT_ROOT = Path(__file__).resolve().parent
 PARENT_PATH = Path(__file__).resolve().parent.parent
 ARTIFACT_DIR = PARENT_PATH / "artifacts"
 
-from src.preprocess import preprocess_raw_data
+from preprocess import preprocess_raw_data
 
 import joblib
 
