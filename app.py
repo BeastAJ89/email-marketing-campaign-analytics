@@ -6,10 +6,10 @@ import pandas as pd
 import streamlit as st
 
 PROJECT_ROOT = Path(__file__).resolve().parent
-PARENT_PATH = Path(__file__).resolve().parent.parent
-ARTIFACT_DIR = PARENT_PATH / "artifacts"
+#PARENT_PATH = Path(__file__).resolve().parent.parent
+ARTIFACT_DIR = PROJECT_ROOT / "artifacts"
 
-from preprocess import preprocess_raw_data
+from src.preprocess import preprocess_raw_data
 
 import joblib
 
@@ -432,7 +432,7 @@ def main():
 			"""
 		)
 
-		fig_dir = PARENT_PATH / "reports" / "figures"
+		fig_dir = PROJECT_ROOT / "reports" / "figures"
 
 		col1, col2 = st.columns(2)
 	

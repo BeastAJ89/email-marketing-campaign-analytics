@@ -4,10 +4,10 @@ from pathlib import Path
 import joblib
 import pandas as pd
 
-from preprocess import preprocess_raw_data
-from features import prepare_data
-from modeling import train_and_evaluate
-from utils import get_logger
+from src.preprocess import preprocess_raw_data
+from src.features import prepare_data
+from src.modeling import train_and_evaluate
+from src.utils import get_logger
 
 logger = get_logger(__name__) if "get_logger" in globals() else None
 
