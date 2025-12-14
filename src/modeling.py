@@ -14,7 +14,7 @@ try:
 except ImportError:
     HAS_XGB = False
 
-from utils import get_logger
+from src.utils import get_logger
 
 logger = get_logger(__name__)
 
@@ -32,8 +32,12 @@ def train_random_forest(X_train, y_train, n_estimators=300) -> RandomForestClass
     logger.info("---Training Random Forest Model")
 
     model = RandomForestClassifier(
-        n_estimators=n_estimators,
-        max_depth=None,
+        n_estimators=89,
+        max_depth=12,
+        min_samples_leaf = 20,
+        min_samples_split = 29,
+        max_features = "sqrt",
+        bootstrap = True,
         random_state=42,
         n_jobs=-1,
     )

@@ -7,11 +7,11 @@ import streamlit as st
 
 PROJECT_ROOT = Path(__file__).resolve().parent
 PARENT_PATH = Path(__file__).resolve().parent.parent
-sys.path.append(str(PROJECT_ROOT / "src"))
+ARTIFACT_DIR = PARENT_PATH / "artifacts"
 
-from preprocess import preprocess_raw_data
-from features import prepare_data
-from modeling import train_and_evaluate
+from src.preprocess import preprocess_raw_data
+
+import joblib
 
 # Data loading with cache
 @st.cache_data
@@ -22,6 +22,14 @@ def load_data() -> pd.DataFrame:
 
 def compute_rates(df: pd.DataFrame) -> dict:
 	# This will compute overall engagement rates
+	if df is None or df.empty:
+		return{
+			"open_rate": np.nan,
+			"click_rate": np.nan,
+			"conversion_rate": np.nan,
+			"unsubscribe_rate": np.nan,
+			"n_rows": 0,
+		}
 	
 	return{
 		"open_rate": df["open_flag"].mean() if "open_flag" in df.columns else np.nan,
@@ -33,23 +41,11 @@ def compute_rates(df: pd.DataFrame) -> dict:
 
 @st.cache_resource
 def get_model_and_preprocessor():
-	df = load_data()
-
-	feature_cols = [c for c in df.columns if c != "open_flag"]
-
-	# Preparing model data
-	X_train, X_test, y_train, y_test, preprocessor, feature_names = prepare_data(df, target_col = "open_flag")
-
-	# Training a random forest
-	model, metrics = train_and_evaluate(
-		model_name = "rf",
-		X_train = X_train,
-		y_train = y_train,
-		X_test = X_test,
-		y_test = y_test,
-	)
-
-	return model, preprocessor, feature_cols
+	model = joblib.load(ARTIFACT_DIR / "rf_model_deploy.joblib")
+	preprocessor = joblib.load(ARTIFACT_DIR / "preprocessor.joblib")
+	metadata = joblib.load(ARTIFACT_DIR / "metadata.joblib")
+	raw_feature_cols = metadata["raw_feature_cols"]
+	return model, preprocessor, metadata, raw_feature_cols
 
 def multiselect_with_select_all(label:str, options, state_key:str):
 	# Sidebar expander
@@ -106,8 +102,26 @@ def main():
 		You can explore engagement patterns by segment, device, time of day and more.
 	""")
 	
-	df = load_data()
-	model, preprocessor, feature_cols = get_model_and_preprocessor()
+	model, preprocessor, metadata, raw_feature_cols = get_model_and_preprocessor()
+
+	dropdowns = metadata.get("dropdowns", {})
+	country_options = dropdowns.get("country", [])
+	device_type_options = dropdowns.get("device_type", [])
+	archetype_options = dropdowns.get("consumer_archetypes", [])
+	mosaic_options = dropdowns.get("mosaic_segment", [])
+	mailing_category_options = dropdowns.get("mailing_category", [])
+
+	st.sidebar.markdown("### Data Loading")
+	load_full = st.sidebar.toggle("Load full dataset (~400k rows)", value=False)
+	
+	df = None
+	if load_full:
+		with st.spinner("Loadidng and preprocessign full dataset..."):
+			df = load_data()
+	else:
+		st.info("App is running in lightweight mode. Turn on 'Load full dataset' in sidebar for full exploration.")
+	
+	dropdowns = metadata.get("dropdowns", {})
 
 	# Creating Tabs
 	tab_overview, tab_segments, tab_score, tab_shap = st.tabs(
@@ -118,6 +132,10 @@ def main():
 	with tab_overview:
 		st.subheader("Overall Engagement Summary")
 
+		if df is None:
+			st.warning("Overview needs the dataset. Turn on 'Load full dataset' in the sidebar.")
+			st.stop()
+
 		base_metrics = compute_rates(df)
 
 		c1, c2, c3, c4 = st.columns(4)
@@ -126,7 +144,7 @@ def main():
 		c3.metric("Conversion Rate", f"{base_metrics['conversion_rate']*100:.2f}%")
 		c4.metric("Unsubscribe Rate", f"{base_metrics['unsubscribe_rate']*100:.2f}%")
 
-		st.caption((f"Total rows: {base_metrics['n_rows']: ,}"))
+		st.caption((f"Total rows: {base_metrics['n_rows']:,}"))
 
 		col_left, col_right = st.columns(2)
 
@@ -163,50 +181,35 @@ def main():
 
 		st.sidebar.markdown("### Filters (Segmentation Explorer)")
 
-		# Country Filter
-		if "country" in df.columns:
-			countries = sorted(df["country"].dropna().unique().tolist())
-		else:
-			countries = []
+		countries = country_options
+		archetypes = archetype_options
+		mosaic_segments = mosaic_options
+		devices = device_type_options
+		categories = mailing_category_options
+
 		selected_countries = multiselect_with_select_all(
-			label = "Country", options = countries, state_key = "country"
+			label="Country", options = countries, state_key="country"
 		)
 
-		# Consumer Archetype Filter
-		if "consumer_archetypes" in df.columns:
-			archetypes = sorted(df["consumer_archetypes"].dropna().unique().tolist())
-		else:
-			archetypes = []
 		selected_archetypes = multiselect_with_select_all(
 			label = "Consumer Archetypes", options = archetypes, state_key="consumer_archetypes"
 		)
 
-		# Mosaic Segment Filter
-		if "mosaic_segment" in df.columns:
-			mosaic_segments = sorted(df["mosaic_segment"].dropna().unique().tolist())
-		else:
-			mosaic_segments = []
 		selected_mosaic = multiselect_with_select_all(
-			label = "Mosaic Segment", options = mosaic_segments, state_key = "mosaic_segment",
+			label = "Mosaic Segment", options  = mosaic_segments, state_key= "mosaic_segment"
 		)
 
-		# Device Type Filter
-		if "device_type" in df.columns:
-			devices = sorted(df["device_type"].dropna().unique().tolist())
-		else:
-			devices = []
 		selected_devices = multiselect_with_select_all(
-			label="Device Type", options=devices, state_key = "device_type",
+			label ="Device Type", options= devices, state_key = "device_type"
 		)
-		
-		# Mailing Category Filter
-		if "mailing_category" in df.columns:
-			categories = sorted(df["mailing_category"].dropna().unique().tolist())
-		else:
-			categories = []
+
 		selected_categories = multiselect_with_select_all(
-			label= "Mailing Category", options=categories, state_key = "mailing_category",
+			label = "Mailing Category", options = categories, state_key = "mailing_category"
 		)
+
+		if df is None:
+			st.warning("Segmentation Explorer needs the dataset. Tun on 'Load full dataset' in the sidebar.")
+			st.stop()
 			
 		# Applying filters
 		filtered = df.copy()
@@ -228,11 +231,11 @@ def main():
 		col1, col2, col3, col4 = st.columns(4)
 		col1.metric(
 		"Open Rate (filtered)",
-		f"{filtered_metrics['open_rate']*100.:.1f}%",
+		f"{filtered_metrics['open_rate']*100:.1f}%",
 		f"{(filtered_metrics['open_rate']-base_metrics['open_rate'])*100:.1f} pts vs overall",
 		)
 		col2.metric(
-			"Conversion Rate (filtered)",
+			"Click Rate (filtered)",
 			f"{filtered_metrics['click_rate']*100:.1f}%",
 			f"{(filtered_metrics['click_rate']-base_metrics['click_rate'])*100:.1f} pts vs overall",
 		)
@@ -244,7 +247,7 @@ def main():
 		col4.metric(
 			"Unsubscribe Rate (filtered)",
 			f"{filtered_metrics['unsubscribe_rate']*100:.2f}%",
-			f"{(filtered_metrics['unsubscribe_rate']-base_metrics['conversion_rate'])*100:.2f} pts vs overall",
+			f"{(filtered_metrics['unsubscribe_rate']-base_metrics['unsubscribe_rate'])*100:.2f} pts vs overall",
 		)
 		
 		st.caption(
@@ -321,8 +324,11 @@ def main():
 			height=320,
 			)
 	
-	# ----------------------------------Tab 3 -> Score a Customer
+	# ----------------------------------Tab 3 -> Open Probability Predictor
 	with tab_score:
+		if df is None:
+			st.warning("Predictor needs the dataset. Turn on 'Load full dataset' in the sidebar.")
+			st.stop()
 		st.subheader("Open Probability Predictor")
 
 		st.write(
@@ -338,25 +344,19 @@ def main():
 			with col_a:
 				age = st.number_input("Age", min_value=18, max_value=90, value=36)
 				country = st.selectbox(
-					"Country", sorted(df["country"].dropna().unique().tolist())
-				)
+					"Country", options=country_options)
+			
 				device_type = st.selectbox(
-					"Device Type", sorted(df["device_type"].dropna().unique().tolist())
-					if "device_type" in df.columns
-					else [],
-				)
+					"Device Type", options=device_type_options)
+				
 
 			with col_b:
 				archetype = st.selectbox(
-					"Consumer Archetype", sorted(df["consumer_archetypes"].dropna().unique().tolist())
-					if "consumer_archetypes" in df.columns
-					else [],
-				)
+					"Consumer Archetype", options=archetype_options)
+
 				mosaic_segment = st.selectbox(
-					"Mosaic Segment", sorted(df["mosaic_segment"].dropna().unique().tolist())
-					if "mosaic_segment" in df.columns
-					else [],
-				)
+					"Mosaic Segment", options=mosaic_options)
+
 				mailing_hour = st.slider("Mailing Hour", 0, 23, 9)
 			
 			with col_c:
@@ -376,7 +376,7 @@ def main():
 			template = df.iloc[[0]].copy()
 
 			# Override with user inputs
-			template["age"] = age,
+			template["age"] = age
 			template["country"] = country
 			template["device_type"] = device_type
 			template["consumer_archetypes"] = archetype
@@ -394,7 +394,12 @@ def main():
 			)
 
 			# Transforming
-			X_single = preprocessor.transform(template[feature_cols])
+			missing = [c for c in raw_feature_cols if c not in template.columns]
+			if missing:
+				st.error(f"Template missing columns required by preprocessor: {missing[:10]} ...")
+				st.stop()
+
+			X_single = preprocessor.transform(template[raw_feature_cols])
 
 			prob = float(model.predict_proba(X_single)[0, 1])
 

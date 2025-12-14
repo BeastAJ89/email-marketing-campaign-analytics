@@ -8,7 +8,7 @@ from sklearn.compose import ColumnTransformer
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import OneHotEncoder, OrdinalEncoder
 
-from utils import get_logger
+from src.utils import get_logger
 
 logger = get_logger(__name__)
 
@@ -110,12 +110,14 @@ def get_feature_matrix_and_target(df: pd.DataFrame, target_col: str="open_flag",
 
 def prepare_data(df: pd.DataFrame, target_col: str = "open_flag", test_size: float = 0.2, 
                  random_state: int = 42) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, 
-                                                  ColumnTransformer, List[str]]:
+                                                  ColumnTransformer, List[str], List[str]]:
     # This will prepare data for modelling
     # split into train/test -> build preprocessor -> fit preprocessor -> transform
     # -> return X_train, X_test, y_train, y_test, preprocessor, feature_names
 
-    logger.info("Preparing model data with target: {target_col}")
+    logger.info(f"Preparing model data with target: {target_col}")
+
+    raw_feature_cols = df.columns.tolist()
 
     X, y = get_feature_matrix_and_target(df, target_col=target_col)
 
@@ -151,5 +153,5 @@ def prepare_data(df: pd.DataFrame, target_col: str = "open_flag", test_size: flo
     return (
         X_train_transformed, X_test_transformed,
         y_train.to_numpy(), y_test.to_numpy(),
-        preprocessor, feature_names,
+        preprocessor, feature_names, raw_feature_cols
     )
