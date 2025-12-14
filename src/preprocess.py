@@ -2,8 +2,8 @@ import pandas as pd
 import numpy as np
 from pathlib import Path
 
-from src.config import RAW_EMAIL_DATA, INTERIM_DATA_DIR
-from src.utils import get_logger, ensure_directory
+from config import RAW_EMAIL_DATA, INTERIM_DATA_DIR
+from utils import get_logger, ensure_directory
 
 logger = get_logger(__name__)
 
